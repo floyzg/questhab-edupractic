@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Редактирование отзыва — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Редактирование отзыва на квест «{{ review.quest.title }}»</h1>
+  <form method="post" data-validate="true">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a class="btn btn-secondary" href="{% url 'booking:quest_detail' slug=review.quest.slug %}">Отмена</a>
+  </form>
+</section>
+{% endblock %}

@@ -16,9 +16,13 @@ from .models import (
     Team,
     UserProfile,
 )
-from .services import find_schedule_conflict, validate_uploaded_image
+from .services import (
+    check_slot_availability,
+    get_allowed_start_times,
+    validate_uploaded_image,
+)
 
-PHONE_PATTERN = re.compile(r'^\+?[78][\s\-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$')
+PHONE_PATTERN = re.compile(r'^\+?[78][\s-]?\(?\d{3}\)?[\s\-]?\d{3}[\s\-]?\d{2}[\s\-]?\d{2}$')
 
 
 class UserRegistrationForm(UserCreationForm):
@@ -153,7 +157,7 @@ class QuestRoomForm(forms.ModelForm):
 
 
 class BookingForm(forms.ModelForm):
-    """Форма бронирования сеанса квест-комнаты с проверкой 30-мин перерыва и вместимости."""
+    """Форма бронирования сеанса квест-комнаты с выбором из сетки, проверкой перерыва и вместимости."""
 
     extra_options = forms.ModelMultipleChoiceField(
         queryset=ExtraOption.objects.filter(is_active=True),
@@ -167,7 +171,6 @@ class BookingForm(forms.ModelForm):
         fields = ('team', 'booking_date', 'start_time', 'players_count', 'extra_options', 'notes')
         widgets = {
             'booking_date': forms.DateInput(attrs={'type': 'date'}),
-            'start_time': forms.TimeInput(attrs={'type': 'time'}),
             'notes': forms.Textarea(attrs={'rows': 3}),
         }
 
@@ -178,6 +181,12 @@ class BookingForm(forms.ModelForm):
         if captain is not None:
             self.fields['team'].queryset = Team.objects.filter(captain=captain)
         if self.quest is not None:
+            slot_choices = [
+                (t.strftime('%H:%M'), t.strftime('%H:%M'))
+                for t in get_allowed_start_times(self.quest)
+            ]
+            self.fields['start_time'].widget = forms.Select(choices=slot_choices)
+            self.fields['start_time'].help_text = 'Выберите время из доступной сетки сеансов.'
             self.fields['players_count'].help_text = (
                 f'От {self.quest.min_players} до {self.quest.max_players} чел. '
                 f'(до 4 чел. включено в базовую цену, сверх 4 — +{self.quest.extra_player_price} ₽/чел.)'
@@ -204,23 +213,19 @@ class BookingForm(forms.ModelForm):
                 )
 
         if self.quest is not None and b_date is not None and s_time is not None:
-            conflict = find_schedule_conflict(
+            available, reason = check_slot_availability(
                 self.quest,
                 b_date,
                 s_time,
                 exclude_booking_id=self.instance.pk,
             )
-            if conflict is not None:
-                self.add_error(
-                    'start_time',
-                    f'Слот недоступен: пересечение с сеансом {conflict.start_time:%H:%M}–'
-                    f'{conflict.end_time:%H:%M} или техническим перерывом 30 минут.',
-                )
+            if not available:
+                self.add_error('start_time', reason)
         return cleaned_data
 
 
 class ReviewForm(forms.ModelForm):
-    """Форма публикации отзыва о квест-комнате."""
+    """Форма публикации и редактирования отзыва о квест-комнате."""
 
     class Meta:
         model = Review

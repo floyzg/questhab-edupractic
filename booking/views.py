@@ -17,7 +17,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
-from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_GET
 
 from .forms import (
     BookingForm,
@@ -31,6 +31,7 @@ from .forms import (
 from .models import (
     AgeRating,
     Booking,
+    BookingExtraOption,
     ExtraOption,
     GameResult,
     Genre,
@@ -44,8 +45,8 @@ from .services import (
     build_bookings_csv_response,
     build_daily_slots_for_quest,
     calculate_booking_price,
+    check_slot_availability,
     create_booking_atomic,
-    find_schedule_conflict,
     send_booking_notification,
     update_booking_atomic,
 )
@@ -63,6 +64,16 @@ def _is_staff_or_operator(user) -> bool:
     return bool(profile and profile.role in (UserProfile.ROLE_OPERATOR, UserProfile.ROLE_ADMIN))
 
 
+def _is_actor_or_staff(user) -> bool:
+    """Проверяет, является ли пользователь актёром, оператором или администратором."""
+    if not user.is_authenticated:
+        return False
+    if _is_staff_or_operator(user):
+        return True
+    profile = getattr(user, 'profile', None)
+    return bool(profile and profile.role == UserProfile.ROLE_ACTOR)
+
+
 def _ensure_booking_access(user, booking: Booking) -> None:
     """Защита от IDOR: доступ только владельцу брони или оператору/администратору."""
     if booking.captain_id != user.id and not _is_staff_or_operator(user):
@@ -78,6 +89,12 @@ def _ensure_team_access(user, team: Team) -> None:
     """Защита от IDOR: доступ только капитану команды или администратору."""
     if team.captain_id != user.id and not _is_staff_or_operator(user):
         raise PermissionDenied('У вас нет прав для работы с чужой командой.')
+
+
+def _ensure_review_access(user, review: Review) -> None:
+    """Защита от IDOR: редактировать/удалять отзыв может автор или оператор/админ."""
+    if review.author_id != user.id and not _is_staff_or_operator(user):
+        raise PermissionDenied('У вас нет прав для изменения или удаления чужого отзыва.')
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +180,6 @@ def quest_list_view(request: HttpRequest) -> HttpResponse:
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Сохраняем фильтры и сортировку при переходе по страницам пагинации
     params = request.GET.copy()
     params.pop('page', None)
     query_string = params.urlencode()
@@ -229,6 +245,34 @@ def quest_detail_view(request: HttpRequest, slug: str) -> HttpResponse:
             'is_staff_or_operator': _is_staff_or_operator(request.user),
         },
     )
+
+
+# ---------------------------------------------------------------------------
+# CRUD отзывов
+# ---------------------------------------------------------------------------
+
+@login_required
+def review_update_view(request: HttpRequest, pk: int) -> HttpResponse:
+    review = get_object_or_404(Review.objects.select_related('quest'), pk=pk)
+    _ensure_review_access(request.user, review)
+    form = ReviewForm(request.POST or None, instance=review)
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Отзыв обновлён.')
+        return redirect('booking:quest_detail', slug=review.quest.slug)
+    return render(request, 'booking/review_form.html', {'form': form, 'review': review})
+
+
+@login_required
+def review_delete_view(request: HttpRequest, pk: int) -> HttpResponse:
+    review = get_object_or_404(Review.objects.select_related('quest'), pk=pk)
+    _ensure_review_access(request.user, review)
+    quest_slug = review.quest.slug
+    if request.method == 'POST':
+        review.delete()
+        messages.success(request, 'Отзыв удалён.')
+        return redirect('booking:quest_detail', slug=quest_slug)
+    return render(request, 'booking/review_confirm_delete.html', {'review': review})
 
 
 # ---------------------------------------------------------------------------
@@ -433,6 +477,33 @@ def booking_export_csv_view(request: HttpRequest) -> HttpResponse:
 
 
 # ---------------------------------------------------------------------------
+# Расписание актёра-аниматора
+# ---------------------------------------------------------------------------
+
+@login_required
+def actor_schedule_view(request: HttpRequest) -> HttpResponse:
+    """Просмотр назначенных сеансов с услугой актёра-аниматора."""
+    if not _is_actor_or_staff(request.user):
+        raise PermissionDenied('Раздел доступен только актёрам-аниматорам, операторам и администраторам.')
+
+    qs = (
+        BookingExtraOption.objects.select_related(
+            'booking__quest',
+            'booking__team',
+            'option',
+            'assigned_actor',
+        )
+        .filter(option__option_type=ExtraOption.TYPE_ACTOR)
+        .exclude(booking__status=Booking.STATUS_CANCELLED)
+        .order_by('booking__booking_date', 'booking__start_time')
+    )
+    if not _is_staff_or_operator(request.user):
+        qs = qs.filter(assigned_actor=request.user)
+
+    return render(request, 'booking/actor_schedule.html', {'assignments': qs})
+
+
+# ---------------------------------------------------------------------------
 # CRUD команд игрока
 # ---------------------------------------------------------------------------
 
@@ -524,7 +595,6 @@ def result_create_view(request: HttpRequest, booking_pk: int) -> HttpResponse:
             result.team = booking.team
             result.played_at = booking.booking_date
             result.recorded_by = request.user
-            # Расчёт рейтинга: база 1000 - время*5 - подсказки*80
             raw_score = 1000 - (result.completion_minutes * 5) - (result.hints_used * 80)
             result.score = max(100, raw_score)
             result.save()
@@ -540,12 +610,15 @@ def result_create_view(request: HttpRequest, booking_pk: int) -> HttpResponse:
 
 
 # ---------------------------------------------------------------------------
-# Сводные показатели и аналитика (Дашборд)
+# Сводные показатели и аналитика (только для оператора / администратора)
 # ---------------------------------------------------------------------------
 
 @login_required
 def analytics_view(request: HttpRequest) -> HttpResponse:
-    """Страница со сводными показателями (агрегатные запросы + диаграмма)."""
+    """Страница со сводными показателями (только для оператора и администратора)."""
+    if not _is_staff_or_operator(request.user):
+        raise PermissionDenied('Сводная финансовая аналитика доступна только оператору и администратору.')
+
     active_bookings = Booking.objects.exclude(status=Booking.STATUS_CANCELLED)
     total_count = active_bookings.count()
 
@@ -598,7 +671,7 @@ def analytics_view(request: HttpRequest) -> HttpResponse:
 
 @require_GET
 def api_booking_price_preview(request: HttpRequest, slug: str) -> JsonResponse:
-    """Возвращает расчёт стоимости и проверку 30-мин перерыва в JSON без перезагрузки."""
+    """Возвращает расчёт стоимости и проверку сетки/блокировки/30-мин перерыва в JSON."""
     quest = get_object_or_404(QuestRoom, slug=slug, is_active=True)
 
     date_str = request.GET.get('date', '').strip()
@@ -621,7 +694,7 @@ def api_booking_price_preview(request: HttpRequest, slug: str) -> JsonResponse:
     except ValidationError as exc:
         return JsonResponse({'error': exc.message}, status=400)
 
-    conflict = find_schedule_conflict(quest, target_date, target_time)
+    available, reason = check_slot_availability(quest, target_date, target_time)
 
     return JsonResponse({
         'tariff_name': breakdown.tariff_slot.name,
@@ -631,13 +704,8 @@ def api_booking_price_preview(request: HttpRequest, slug: str) -> JsonResponse:
         'extra_players_fee': str(breakdown.extra_players_fee),
         'extras_total': str(breakdown.extras_total),
         'total_price': str(breakdown.total_price),
-        'available': conflict is None,
-        'conflict_reason': (
-            f'Пересечение с бронью {conflict.start_time:%H:%M}–{conflict.end_time:%H:%M} '
-            f'или техническим перерывом 30 минут.'
-            if conflict
-            else 'Слот свободен для бронирования.'
-        ),
+        'available': available,
+        'conflict_reason': reason,
     })
 
 

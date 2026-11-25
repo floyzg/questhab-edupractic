@@ -91,6 +91,14 @@
           <strong>{{ rev.author.username }} — {{ rev.rating }}/5</strong>
           <small class="help-text">{{ rev.created_at|date:"d.m.Y H:i" }}</small>
           <p>{{ rev.comment }}</p>
+          {% if user.is_authenticated %}
+            {% if rev.author_id == user.id or is_staff_or_operator %}
+              <div class="card-footer">
+                <a class="btn btn-secondary btn-sm" href="{% url 'booking:review_update' pk=rev.pk %}">Изменить</a>
+                <a class="btn btn-danger btn-sm" href="{% url 'booking:review_delete' pk=rev.pk %}">Удалить</a>
+              </div>
+            {% endif %}
+          {% endif %}
         </div>
       </article>
     {% empty %}

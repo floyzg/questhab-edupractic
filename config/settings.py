@@ -1,4 +1,5 @@
 """Настройки Django-проекта QuestHub (Вариант 14: Квест-комнаты и антикафе)."""
+import importlib.util
 import os
 from pathlib import Path
 
@@ -55,6 +56,12 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+if DEBUG and importlib.util.find_spec('debug_toolbar') is not None:
+    INSTALLED_APPS.append('debug_toolbar')
+    MIDDLEWARE.insert(0, 'debug_toolbar.middleware.DebugToolbarMiddleware')
+
+INTERNAL_IPS = ['127.0.0.1']
+
 ROOT_URLCONF = 'config.urls'
 
 TEMPLATES = [
@@ -68,6 +75,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'booking.context_processors.user_roles',
             ],
         },
     },
@@ -126,22 +134,18 @@ EMAIL_BACKEND = os.environ.get(
 )
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'noreply@questhub.local')
 
-# Безопасность HTTP-заголовков и cookies
 SESSION_COOKIE_HTTPONLY = True
 X_FRAME_OPTIONS = 'DENY'
 SECURE_CONTENT_TYPE_NOSNIFF = True
 
-# Ограничения на загрузку файлов (2 МБ)
 MAX_UPLOAD_IMAGE_SIZE = 2 * 1024 * 1024
 ALLOWED_IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.webp'}
 
-# Бизнес-константы Варианта 14
 BASE_INCLUDED_PLAYERS = 4
 TECH_BREAK_MINUTES = 30
 LOGIN_MAX_ATTEMPTS = 5
 LOGIN_LOCKOUT_SECONDS = 300
 
-# Журналирование ошибок (срок хранения >= 30 дней при ротации)
 LOG_DIR = BASE_DIR / 'logs'
 LOG_DIR.mkdir(exist_ok=True)
 

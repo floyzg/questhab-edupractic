@@ -30,7 +30,12 @@
           <li><a class="nav-link" href="{% url 'booking:about' %}">Правила и тарифы</a></li>
           {% if user.is_authenticated %}
             <li><a class="nav-link" href="{% url 'booking:team_list' %}">Мои команды</a></li>
-            <li><a class="nav-link" href="{% url 'booking:analytics' %}">Аналитика</a></li>
+            {% if is_actor %}
+              <li><a class="nav-link" href="{% url 'booking:actor_schedule' %}">Смены актёра</a></li>
+            {% endif %}
+            {% if is_staff_or_operator %}
+              <li><a class="nav-link" href="{% url 'booking:analytics' %}">Аналитика</a></li>
+            {% endif %}
           {% endif %}
         </ul>
 

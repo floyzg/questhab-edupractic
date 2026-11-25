@@ -1,4 +1,4 @@
-"""Сервисный слой: расчёт стоимости, проверка 30-мин перерыва, транзакции, email и CSV."""
+"""Сервисный слой: расчёт стоимости, сетка сеансов, 30-мин перерыв, транзакции, CSV и email."""
 import csv
 import logging
 import uuid
@@ -39,6 +39,18 @@ class PriceBreakdown:
     extra_players_fee: Decimal
     extras_total: Decimal
     total_price: Decimal
+
+
+def get_allowed_start_times(quest: QuestRoom) -> list[time]:
+    """Возвращает допустимую сетку времени начала сеансов для квеста (10:00–22:30)."""
+    step_minutes = quest.duration_minutes + getattr(settings, 'TECH_BREAK_MINUTES', 30)
+    current_dt = datetime.combine(date.today(), time(10, 0))
+    end_of_day = datetime.combine(date.today(), time(22, 30))
+    times: list[time] = []
+    while current_dt <= end_of_day:
+        times.append(current_dt.time())
+        current_dt += timedelta(minutes=step_minutes)
+    return times
 
 
 def get_tariff_for_time(start_time: time) -> TariffSlot:
@@ -159,6 +171,67 @@ def find_schedule_conflict(
     return None
 
 
+def check_slot_availability(
+    quest: QuestRoom,
+    booking_date: date,
+    start_time: time,
+    exclude_booking_id: Optional[int] = None,
+) -> tuple[bool, str]:
+    """
+    Комплексная проверка доступности слота:
+    1. Время начала входит в разрешённую сетку сеансов квеста (или открытый SessionSchedule).
+    2. Сеанс не заблокирован в SessionSchedule (is_blocked=True).
+    3. Нет пересечения с другими бронями и 30-минутным техническим перерывом.
+    """
+    allowed_times = get_allowed_start_times(quest)
+    has_custom_slot = SessionSchedule.objects.filter(
+        quest=quest,
+        date=booking_date,
+        start_time=start_time,
+        is_blocked=False,
+    ).exists()
+    if start_time not in allowed_times and not has_custom_slot:
+        return (
+            False,
+            'Выбранное время не входит в доступную сетку сеансов квеста.',
+        )
+
+    proposed_start = datetime.combine(booking_date, start_time)
+    proposed_end = proposed_start + timedelta(minutes=quest.duration_minutes)
+
+    blocked_sessions = SessionSchedule.objects.filter(
+        quest=quest,
+        date=booking_date,
+        is_blocked=True,
+    )
+    for blocked in blocked_sessions:
+        b_start = datetime.combine(blocked.date, blocked.start_time)
+        b_end = datetime.combine(blocked.date, blocked.end_time)
+        if b_end <= b_start:
+            b_end += timedelta(days=1)
+        if proposed_start < b_end and proposed_end > b_start:
+            return (
+                False,
+                f'Сеанс {blocked.start_time:%H:%M} заблокирован администратором (обслуживание).',
+            )
+
+    conflict = find_schedule_conflict(
+        quest,
+        booking_date,
+        start_time,
+        exclude_booking_id=exclude_booking_id,
+    )
+    if conflict is not None:
+        break_min = getattr(settings, 'TECH_BREAK_MINUTES', 30)
+        return (
+            False,
+            f'Пересечение с сеансом {conflict.start_time:%H:%M}–'
+            f'{conflict.end_time:%H:%M} или техническим перерывом {break_min} минут.',
+        )
+
+    return True, 'Свободно'
+
+
 def generate_booking_code() -> str:
     """Генерирует уникальный читаемый код бронирования."""
     return f'QH-{uuid.uuid4().hex[:8].upper()}'
@@ -177,16 +250,11 @@ def create_booking_atomic(
 ) -> Booking:
     """Создаёт бронирование и связанные опции в одной транзакции."""
     with transaction.atomic():
-        # Блокируем строку квеста на время проверки конкурентных броней
         locked_quest = QuestRoom.objects.select_for_update().get(pk=quest.pk)
 
-        conflict = find_schedule_conflict(locked_quest, booking_date, start_time)
-        if conflict is not None:
-            break_min = getattr(settings, 'TECH_BREAK_MINUTES', 30)
-            raise ValidationError(
-                f'Выбранное время недоступно: пересечение с сеансом {conflict.start_time:%H:%M}–'
-                f'{conflict.end_time:%H:%M} или обязательным техническим перерывом {break_min} минут.'
-            )
+        available, reason = check_slot_availability(locked_quest, booking_date, start_time)
+        if not available:
+            raise ValidationError(reason)
 
         breakdown = calculate_booking_price(
             quest=locked_quest,
@@ -259,21 +327,17 @@ def update_booking_atomic(
     extra_options: list[ExtraOption],
     notes: str = '',
 ) -> Booking:
-    """Обновляет существующее бронирование с пересчётом цены и проверкой 30-мин перерыва."""
+    """Обновляет бронирование, привязку к SessionSchedule, цену и проверяет перерыв."""
     with transaction.atomic():
         locked_quest = QuestRoom.objects.select_for_update().get(pk=booking.quest_id)
-        conflict = find_schedule_conflict(
+        available, reason = check_slot_availability(
             locked_quest,
             booking_date,
             start_time,
             exclude_booking_id=booking.pk,
         )
-        if conflict is not None:
-            break_min = getattr(settings, 'TECH_BREAK_MINUTES', 30)
-            raise ValidationError(
-                f'Выбранное время недоступно: пересечение с сеансом {conflict.start_time:%H:%M}–'
-                f'{conflict.end_time:%H:%M} или техническим перерывом {break_min} минут.'
-            )
+        if not available:
+            raise ValidationError(reason)
 
         breakdown = calculate_booking_price(
             quest=locked_quest,
@@ -285,7 +349,19 @@ def update_booking_atomic(
             minutes=locked_quest.duration_minutes
         )
 
+        session_obj, _ = SessionSchedule.objects.get_or_create(
+            quest=locked_quest,
+            date=booking_date,
+            start_time=start_time,
+            defaults={
+                'tariff_slot': breakdown.tariff_slot,
+                'end_time': end_dt.time(),
+                'is_blocked': False,
+            },
+        )
+
         booking.team = team
+        booking.session = session_obj
         booking.tariff_slot = breakdown.tariff_slot
         booking.booking_date = booking_date
         booking.start_time = start_time
@@ -361,7 +437,6 @@ def validate_uploaded_image(uploaded_file) -> None:
     if suffix not in allowed_ext:
         raise ValidationError('Разрешены только изображения форматов JPG, PNG или WEBP.')
 
-    # Проверка реального содержимого изображения через Pillow
     try:
         pos = uploaded_file.tell()
         with Image.open(uploaded_file) as img:
@@ -416,18 +491,11 @@ def build_bookings_csv_response(queryset) -> HttpResponse:
 
 
 def build_daily_slots_for_quest(quest: QuestRoom, target_date: date) -> list[dict]:
-    """Генерирует сетку сеансов с 10:00 до 22:00 с учётом занятости и 30-мин перерыва."""
+    """Генерирует сетку сеансов с учётом занятости, блокировок и 30-мин перерыва."""
     slots = []
-    # Стандартные стартовые слоты каждые 90 минут (при длительности 60 мин это даёт 30 мин перерыва)
-    # Плюс показываем 10:00, 11:30, 13:00, 14:30, 16:00, 17:30, 19:00, 20:30, 22:00
-    step_minutes = quest.duration_minutes + getattr(settings, 'TECH_BREAK_MINUTES', 30)
-    current_dt = datetime.combine(target_date, time(10, 0))
-    end_of_day = datetime.combine(target_date, time(22, 30))
-
-    while current_dt <= end_of_day:
-        slot_time = current_dt.time()
+    for slot_time in get_allowed_start_times(quest):
         tariff = get_tariff_for_time(slot_time)
-        conflict = find_schedule_conflict(quest, target_date, slot_time)
+        available, reason = check_slot_availability(quest, target_date, slot_time)
         price = (quest.base_price * tariff.price_multiplier).quantize(
             Decimal('0.01'), rounding=ROUND_HALF_UP
         )
@@ -435,12 +503,7 @@ def build_daily_slots_for_quest(quest: QuestRoom, target_date: date) -> list[dic
             'time': slot_time.strftime('%H:%M'),
             'tariff': tariff.name,
             'price': str(price),
-            'available': conflict is None,
-            'reason': (
-                f'Занято / тех. перерыв 30 мин (бронь {conflict.start_time:%H:%M})'
-                if conflict
-                else 'Свободно'
-            ),
+            'available': available,
+            'reason': reason,
         })
-        current_dt += timedelta(minutes=step_minutes)
     return slots

@@ -17,6 +17,10 @@ urlpatterns = [
     path('quests/<slug:slug>/delete/', views.quest_delete_view, name='quest_delete'),
     path('quests/<slug:slug>/book/', views.booking_create_view, name='booking_create'),
 
+    # CRUD отзывов
+    path('reviews/<int:pk>/edit/', views.review_update_view, name='review_update'),
+    path('reviews/<int:pk>/delete/', views.review_delete_view, name='review_delete'),
+
     # JSON API (fetch)
     path('api/quests/<slug:slug>/price-preview/', views.api_booking_price_preview, name='api_price_preview'),
     path('api/quests/<slug:slug>/slots/', views.api_quest_slots, name='api_quest_slots'),
@@ -28,6 +32,9 @@ urlpatterns = [
     path('bookings/<int:pk>/print/', views.booking_print_view, name='booking_print'),
     path('bookings/<int:booking_pk>/result/', views.result_create_view, name='result_create'),
     path('bookings/export/csv/', views.booking_export_csv_view, name='booking_export_csv'),
+
+    # Расписание актёра-аниматора
+    path('actor/schedule/', views.actor_schedule_view, name='actor_schedule'),
 
     # CRUD команд
     path('teams/', views.team_list_view, name='team_list'),

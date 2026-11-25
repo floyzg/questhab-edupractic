@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Смены актёра-аниматора — QuestHub{% endblock %}
+{% block content %}
+<h1>Назначенные сеансы с услугой актёра</h1>
+<p>Здесь отображаются активные бронирования, в которых заказано участие актёра-аниматора.</p>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Код брони</th>
+        <th>Дата</th>
+        <th>Время</th>
+        <th>Квест</th>
+        <th>Команда</th>
+        <th>Услуга</th>
+        <th>Актёр</th>
+        <th>Статус</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in assignments %}
+        <tr>
+          <td><strong>{{ item.booking.booking_code }}</strong></td>
+          <td>{{ item.booking.booking_date|date:"d.m.Y" }}</td>
+          <td>{{ item.booking.start_time|time:"H:i" }} – {{ item.booking.end_time|time:"H:i" }}</td>
+          <td><a href="{% url 'booking:quest_detail' slug=item.booking.quest.slug %}">{{ item.booking.quest.title }}</a></td>
+          <td>{{ item.booking.team.name }} ({{ item.booking.players_count }} чел.)</td>
+          <td>{{ item.option.name }}</td>
+          <td>{{ item.assigned_actor.username|default:"Не назначен" }}</td>
+          <td><span class="badge">{{ item.booking.get_status_display }}</span></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8">Назначенных сеансов с участием актёра пока нет.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

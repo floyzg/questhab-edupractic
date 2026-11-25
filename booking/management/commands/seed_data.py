@@ -29,7 +29,6 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write('Загрузка демонстрационных данных QuestHub...')
 
-        # 1. Пользователи и роли
         users_spec = [
             ('admin', 'admin@questhub.local', 'AdminPass123!', UserProfile.ROLE_ADMIN, True),
             ('operator1', 'operator@questhub.local', 'OperPass123!', UserProfile.ROLE_OPERATOR, True),
@@ -52,7 +51,6 @@ class Command(BaseCommand):
             )
             users[username] = user
 
-        # 2. Жанры (6)
         genres_data = [
             ('Хоррор', 'horror', 'Мрачные локации с атмосферой напряжения и актёрами.'),
             ('Детектив', 'detective', 'Расследование преступлений и поиск улик.'),
@@ -66,7 +64,6 @@ class Command(BaseCommand):
             g, _ = Genre.objects.get_or_create(slug=slug, defaults={'name': name, 'description': desc})
             genres.append(g)
 
-        # 3. Возрастные рейтинги (4)
         ratings_data = [
             ('6+', 6, 'Подходит для семейного отдыха с детьми.'),
             ('12+', 12, 'Умеренная сложность, без пугающих сцен.'),
@@ -78,7 +75,6 @@ class Command(BaseCommand):
             r, _ = AgeRating.objects.get_or_create(code=code, defaults={'min_age': min_age, 'description': desc})
             ratings.append(r)
 
-        # 4. Тарифные слоты (4)
         tariffs_data = [
             ('Утренний', time(9, 0), time(12, 0), Decimal('0.85'), 'Скидка 15% на утренние игры'),
             ('Дневной', time(12, 0), time(18, 0), Decimal('1.00'), 'Базовый дневной тариф'),
@@ -91,7 +87,6 @@ class Command(BaseCommand):
                 defaults={'start_time': st, 'end_time': et, 'price_multiplier': mult, 'description': desc},
             )
 
-        # 5. Дополнительные опции (5)
         extras_data = [
             ('Профессиональный актёр-аниматор', ExtraOption.TYPE_ACTOR, Decimal('1500.00'), 'Живое участие актёра в сценарии.'),
             ('Лаунж-зона антикафе (60 мин)', ExtraOption.TYPE_LOUNGE, Decimal('1200.00'), 'Чай, кофе, настольные игры после квеста.'),
@@ -107,7 +102,6 @@ class Command(BaseCommand):
             )
             extras.append(opt)
 
-        # 6. Квест-комнаты (>= 30 записей в основной таблице — 32 квеста!)
         quest_titles = [
             'Тайна заброшенной обсерватории', 'Проклятие старого маяка', 'Бункер-47: Перезагрузка',
             'Ограбление банка на Уолл-стрит', 'Лаборатория доктора Моро', 'Побег из Алькатраса',
@@ -136,7 +130,7 @@ class Command(BaseCommand):
                     ),
                     'fear_level': ((idx - 1) % 5) + 1,
                     'difficulty': ((idx + 1) % 5) + 1,
-                    'duration_minutes': 60 if idx % 3 != 0 else 75,
+                    'duration_minutes': 60,
                     'min_players': 2,
                     'max_players': 6 if idx % 2 == 0 else 8,
                     'base_price': Decimal('3200.00') + Decimal((idx % 5) * 300),
@@ -146,7 +140,6 @@ class Command(BaseCommand):
             )
             quests.append(q)
 
-        # 7. Команды (12 записей)
         teams = []
         for i in range(1, 13):
             cap = users['captain1'] if i % 2 == 1 else users['captain2']
@@ -160,16 +153,16 @@ class Command(BaseCommand):
             )
             teams.append(t)
 
-        # 8. Бронирования (15 записей на разные дни, с соблюдением 30-мин перерыва)
         if Booking.objects.count() < 15:
-            slot_times = [time(10, 0), time(12, 0), time(14, 0), time(16, 0), time(18, 0), time(20, 0)]
+            slot_times = [time(10, 0), time(11, 30), time(13, 0), time(14, 30), time(16, 0), time(17, 30), time(19, 0)]
+            actor_opt = extras[0]
             for i in range(15):
                 q = quests[i % len(quests)]
                 t = teams[i % len(teams)]
                 b_date = date.today() + timedelta(days=(i // 3) + 1)
                 s_time = slot_times[i % len(slot_times)]
-                players = min(q.max_players, 3 + (i % 4))  # от 3 до 6 игроков (проверка доплаты > 4)
-                selected_extras = [extras[i % len(extras)]] if i % 2 == 0 else []
+                players = min(q.max_players, 3 + (i % 4))
+                selected_extras = [actor_opt] if i in (0, 10, 12) else ([extras[i % len(extras)]] if i % 2 == 0 else [])
 
                 if Booking.objects.filter(quest=q, booking_date=b_date, start_time=s_time).exists():
                     continue
@@ -217,7 +210,6 @@ class Command(BaseCommand):
                         recorded_by=users['operator1'],
                     )
 
-        # 9. Отзывы (12 записей)
         if Review.objects.count() < 12:
             for i in range(12):
                 Review.objects.create(
