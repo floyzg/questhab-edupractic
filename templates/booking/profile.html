@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Личный кабинет — QuestHub{% endblock %}
+{% block content %}
+<h1>Личный кабинет: {{ user.username }}</h1>
+<p>Роль: <span class="badge">{{ profile.get_role_display }}</span></p>
+
+<section class="form-card">
+  <h2>Данные профиля</h2>
+  {% if profile.avatar %}
+    <img src="{{ profile.avatar.url }}" alt="Аватар пользователя {{ user.username }}" width="96" height="96">
+  {% endif %}
+  <form method="post" enctype="multipart/form-data" data-validate="true">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <div class="hero-actions">
+      <button type="submit" class="btn btn-primary btn-sm">Сохранить профиль</button>
+      <a class="btn btn-secondary btn-sm" href="{% url 'booking:password_change' %}">Сменить пароль</a>
+    </div>
+  </form>
+</section>
+
+<div class="card-footer">
+  <h2>{% if is_staff_or_operator %}Последние бронирования клуба{% else %}Мои бронирования{% endif %}</h2>
+  <a class="btn btn-secondary btn-sm" href="{% url 'booking:booking_export_csv' %}">Выгрузить CSV</a>
+</div>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Код</th>
+        <th>Квест</th>
+        <th>Команда</th>
+        <th>Дата и время</th>
+        <th>Игроков</th>
+        <th>Итого</th>
+        <th>Статус</th>
+        <th>Действия</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for b in bookings %}
+        <tr>
+          <td><strong>{{ b.booking_code }}</strong></td>
+          <td><a href="{% url 'booking:quest_detail' slug=b.quest.slug %}">{{ b.quest.title }}</a></td>
+          <td>{{ b.team.name }}</td>
+          <td>{{ b.booking_date|date:"d.m.Y" }} {{ b.start_time|time:"H:i" }}</td>
+          <td>{{ b.players_count }}</td>
+          <td>{{ b.total_price|floatformat:0 }} ₽</td>
+          <td><span class="badge">{{ b.get_status_display }}</span></td>
+          <td><a class="btn btn-secondary btn-sm" href="{% url 'booking:booking_detail' pk=b.pk %}">Открыть</a></td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8">Бронирований пока нет. <a href="{% url 'booking:quest_list' %}">Выбрать квест</a></td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

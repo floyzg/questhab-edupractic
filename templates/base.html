@@ -1,0 +1,80 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}QuestHub — Квест-комнаты и антикафе{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container header-wrap">
+      <div class="header-inner">
+        <a class="brand" href="{% url 'booking:home' %}">QuestHub</a>
+        <button
+          id="nav-toggle-btn"
+          class="nav-toggle"
+          type="button"
+          aria-label="Открыть меню"
+          aria-expanded="false"
+          aria-controls="main-nav"
+        >☰</button>
+      </div>
+
+      <nav id="main-nav" class="main-nav" aria-label="Основная навигация">
+        <ul class="nav-list">
+          <li><a class="nav-link" href="{% url 'booking:home' %}">Главная</a></li>
+          <li><a class="nav-link" href="{% url 'booking:quest_list' %}">Каталог квестов</a></li>
+          <li><a class="nav-link" href="{% url 'booking:leaderboard' %}">Рекорды</a></li>
+          <li><a class="nav-link" href="{% url 'booking:about' %}">Правила и тарифы</a></li>
+          {% if user.is_authenticated %}
+            <li><a class="nav-link" href="{% url 'booking:team_list' %}">Мои команды</a></li>
+            <li><a class="nav-link" href="{% url 'booking:analytics' %}">Аналитика</a></li>
+          {% endif %}
+        </ul>
+
+        <div class="nav-auth">
+          {% if user.is_authenticated %}
+            <a class="btn btn-secondary btn-sm" href="{% url 'booking:profile' %}">{{ user.username }}</a>
+            <form method="post" action="{% url 'booking:logout' %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-secondary btn-sm">Выйти</button>
+            </form>
+          {% else %}
+            <a class="btn btn-secondary btn-sm" href="{% url 'booking:login' %}">Войти</a>
+            <a class="btn btn-primary btn-sm" href="{% url 'booking:register' %}">Регистрация</a>
+          {% endif %}
+        </div>
+      </nav>
+    </div>
+  </header>
+
+  <main class="site-main">
+    <div class="container">
+      {% if messages %}
+        <ul class="messages" aria-live="polite">
+          {% for message in messages %}
+            <li class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p>&copy; 2026 QuestHub — Квест-комнаты и антикафе. Учебная практика, Вариант 14.</p>
+      <p>
+        <a href="{% url 'booking:quest_list' %}">Каталог</a> ·
+        <a href="{% url 'booking:leaderboard' %}">Таблица рекордов</a> ·
+        <a href="{% url 'booking:about' %}">Правила</a>
+      </p>
+    </div>
+  </footer>
+
+  <script src="{% static 'js/main.js' %}"></script>
+</body>
+</html>

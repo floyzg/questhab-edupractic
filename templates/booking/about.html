@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Правила и тарифы — QuestHub{% endblock %}
+{% block content %}
+<h1>Правила бронирования и тарифы</h1>
+
+<section class="form-card">
+  <h2>Основные правила</h2>
+  <ul>
+    <li>Базовая стоимость любого квеста рассчитана на команду от 2 до 4 человек.</li>
+    <li>За каждого дополнительного участника сверх 4 (в пределах вместимости комнаты) автоматически начисляется доплата.</li>
+    <li>Между любыми двумя соседними бронированиями одного квеста система удерживает обязательный технический перерыв <strong>{{ break_minutes }} минут</strong> на сборку реквизита.</li>
+    <li>Приезжайте на локацию за 10 минут до начала вашего сеанса.</li>
+  </ul>
+</section>
+
+<h2>Тарифы по времени суток</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Тариф</th>
+        <th>Интервал</th>
+        <th>Коэффициент</th>
+        <th>Описание</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for t in tariffs %}
+        <tr>
+          <td><strong>{{ t.name }}</strong></td>
+          <td>{{ t.start_time|time:"H:i" }} – {{ t.end_time|time:"H:i" }}</td>
+          <td>×{{ t.price_multiplier }}</td>
+          <td>{{ t.description }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Дополнительные услуги</h2>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Услуга</th>
+        <th>Тип</th>
+        <th>Стоимость</th>
+        <th>Описание</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for opt in extras %}
+        <tr>
+          <td><strong>{{ opt.name }}</strong></td>
+          <td>{{ opt.get_option_type_display }}</td>
+          <td>{{ opt.price|floatformat:0 }} ₽</td>
+          <td>{{ opt.description }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

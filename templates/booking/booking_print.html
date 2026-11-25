@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block title %}Талон {{ booking.booking_code }} — Печать{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Посадочный талон на квест</h1>
+  <p><strong>Код:</strong> {{ booking.booking_code }} · <strong>Статус:</strong> {{ booking.get_status_display }}</p>
+  <hr>
+  <p><strong>Квест-комната:</strong> {{ booking.quest.title }} ({{ booking.quest.age_rating.code }})</p>
+  <p><strong>Дата и время:</strong> {{ booking.booking_date|date:"d.m.Y" }}, {{ booking.start_time|time:"H:i" }} – {{ booking.end_time|time:"H:i" }}</p>
+  <p><strong>Команда:</strong> {{ booking.team.name }} ({{ booking.players_count }} чел.)</p>
+  <p><strong>Капитан:</strong> {{ booking.captain.get_full_name|default:booking.captain.username }} · {{ booking.team.contact_phone }}</p>
+  <p><strong>Детализация:</strong> база {{ booking.base_price }} ₽ + доп. игроки {{ booking.extra_players_fee }} ₽ + услуги {{ booking.extras_total }} ₽</p>
+  <p><strong>Итого:</strong> {{ booking.total_price }} ₽</p>
+  <div class="hero-actions no-print">
+    <button type="button" class="btn btn-primary" onclick="window.print()">Распечатать</button>
+    <a class="btn btn-secondary" href="{% url 'booking:booking_detail' pk=booking.pk %}">Вернуться к брони</a>
+  </div>
+</section>
+{% endblock %}

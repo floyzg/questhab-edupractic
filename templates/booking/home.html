@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}QuestHub — Квест-комнаты и антикафе{% endblock %}
+{% block content %}
+<section class="hero">
+  <h1>Квест-комнаты и антикафе QuestHub</h1>
+  <p>Бронируйте захватывающие квесты по расписанию: прозрачные тарифы по времени суток, автоматический расчёт доплаты за команду свыше 4 человек и гарантированный 30-минутный перерыв на подготовку локации.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="{% url 'booking:quest_list' %}">Выбрать квест</a>
+    <a class="btn btn-secondary" href="{% url 'booking:leaderboard' %}">Таблица рекордов</a>
+  </div>
+</section>
+
+<section aria-labelledby="kpi-heading">
+  <h2 id="kpi-heading">Клуб в цифрах</h2>
+  <div class="kpi-flex">
+    <article class="kpi-card">
+      <div class="kpi-value">{{ stats.quests_count }}</div>
+      <div class="kpi-label">Активных квест-комнат</div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-value">{{ stats.bookings_count }}</div>
+      <div class="kpi-label">Состоявшихся и активных броней</div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-value">{{ stats.records_count }}</div>
+      <div class="kpi-label">Результатов в таблице рекордов</div>
+    </article>
+  </div>
+</section>
+
+<section aria-labelledby="featured-heading">
+  <h2 id="featured-heading">Популярные квесты</h2>
+  <div class="grid-cards">
+    {% for quest in featured_quests %}
+      <article class="card">
+        <div class="card-media">
+          {% if quest.image %}
+            <img src="{{ quest.image.url }}" alt="Обложка квеста {{ quest.title }}" width="640" height="360" loading="lazy">
+          {% else %}
+            <img src="{% static 'img/quest-placeholder.svg' %}" alt="Иллюстрация квеста {{ quest.title }}" width="640" height="360" loading="lazy">
+          {% endif %}
+        </div>
+        <div class="card-body">
+          <div class="badge-row">
+            <span class="badge">{{ quest.genre.name }}</span>
+            <span class="badge">{{ quest.age_rating.code }}</span>
+            <span class="badge">Страх {{ quest.fear_level }}/5</span>
+          </div>
+          <h3>{{ quest.title }}</h3>
+          <p>{{ quest.description|truncatechars:120 }}</p>
+          <div class="card-footer">
+            <span class="price-tag">от {{ quest.base_price|floatformat:0 }} ₽</span>
+            <a class="btn btn-primary btn-sm" href="{% url 'booking:quest_detail' slug=quest.slug %}">Расписание</a>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <p>Квесты пока не добавлены.</p>
+    {% endfor %}
+  </div>
+</section>
+
+<section aria-labelledby="tariffs-heading">
+  <h2 id="tariffs-heading">Тарифные слоты по времени суток</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Тариф</th>
+          <th>Время действия</th>
+          <th>Коэффициент</th>
+          <th>Условия</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tariffs %}
+          <tr>
+            <td><strong>{{ t.name }}</strong></td>
+            <td>{{ t.start_time|time:"H:i" }} – {{ t.end_time|time:"H:i" }}</td>
+            <td>×{{ t.price_multiplier }}</td>
+            <td>{{ t.description }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section aria-labelledby="top-records-heading">
+  <h2 id="top-records-heading">Лидеры таблицы рекордов</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Команда</th>
+          <th>Квест</th>
+          <th>Время</th>
+          <th>Подсказки</th>
+          <th>Баллы</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for rec in top_results %}
+          <tr>
+            <td>{{ rec.team.name }}</td>
+            <td><a href="{% url 'booking:quest_detail' slug=rec.quest.slug %}">{{ rec.quest.title }}</a></td>
+            <td>{{ rec.completion_minutes }} мин</td>
+            <td>{{ rec.hints_used }}</td>
+            <td><strong>{{ rec.score }}</strong></td>
+          </tr>
+        {% empty %}
+          <tr><td colspan="5">Пока нет зафиксированных результатов.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

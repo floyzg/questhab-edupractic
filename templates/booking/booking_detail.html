@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Бронирование {{ booking.booking_code }} — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Бронирование {{ booking.booking_code }}</h1>
+  <p><span class="badge">{{ booking.get_status_display }}</span></p>
+
+  <div class="table-wrap">
+    <table>
+      <tbody>
+        <tr><th>Квест</th><td><a href="{% url 'booking:quest_detail' slug=booking.quest.slug %}">{{ booking.quest.title }}</a></td></tr>
+        <tr><th>Команда</th><td>{{ booking.team.name }}</td></tr>
+        <tr><th>Дата и время</th><td>{{ booking.booking_date|date:"d.m.Y" }} · {{ booking.start_time|time:"H:i" }} – {{ booking.end_time|time:"H:i" }}</td></tr>
+        <tr><th>Участников</th><td>{{ booking.players_count }} чел.</td></tr>
+        <tr><th>Тарифный слот</th><td>{{ booking.tariff_slot.name }} (×{{ booking.tariff_slot.price_multiplier }})</td></tr>
+        <tr><th>Базовая стоимость (2–4 чел.)</th><td>{{ booking.base_price|floatformat:2 }} ₽</td></tr>
+        <tr><th>Доплата за игроков сверх 4</th><td>{{ booking.extra_players_fee|floatformat:2 }} ₽</td></tr>
+        <tr><th>Дополнительные услуги</th><td>{{ booking.extras_total|floatformat:2 }} ₽</td></tr>
+        <tr><th>Итого к оплате</th><td><strong class="price-tag">{{ booking.total_price|floatformat:2 }} ₽</strong></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  {% if booking.booking_extras.all %}
+    <h2>Выбранные опции</h2>
+    <ul>
+      {% for item in booking.booking_extras.all %}
+        <li>{{ item.option.name }} — {{ item.unit_price|floatformat:0 }} ₽</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <div class="hero-actions">
+    <a class="btn btn-secondary" href="{% url 'booking:booking_print' pk=booking.pk %}">Печатный талон</a>
+    {% if booking.status == 'pending' or booking.status == 'confirmed' %}
+      <a class="btn btn-primary" href="{% url 'booking:booking_update' pk=booking.pk %}">Изменить</a>
+      <a class="btn btn-danger" href="{% url 'booking:booking_delete' pk=booking.pk %}">Отменить бронь</a>
+    {% endif %}
+    {% if is_staff_or_operator and booking.status != 'cancelled' and not booking.result %}
+      <a class="btn btn-primary" href="{% url 'booking:result_create' booking_pk=booking.pk %}">Внести результат игры</a>
+    {% endif %}
+  </div>
+</section>
+{% endblock %}

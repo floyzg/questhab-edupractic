@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Фиксация результата — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Результат игры: {{ booking.team.name }}</h1>
+  <p>Квест: <strong>{{ booking.quest.title }}</strong> ({{ booking.booking_date|date:"d.m.Y" }})</p>
+  <form method="post" enctype="multipart/form-data" data-validate="true">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить результат</button>
+    <a class="btn btn-secondary" href="{% url 'booking:booking_detail' pk=booking.pk %}">Отмена</a>
+  </form>
+</section>
+{% endblock %}

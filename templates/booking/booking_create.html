@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Бронирование: {{ quest.title }} — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Бронирование квеста «{{ quest.title }}»</h1>
+  <p>
+    Базовая цена (2–4 чел.): <strong>{{ quest.base_price|floatformat:0 }} ₽</strong> ·
+    Доплата за каждого участника сверх 4: <strong>+{{ quest.extra_player_price|floatformat:0 }} ₽</strong> ·
+    Технический перерыв между играми: <strong>30 минут</strong>.
+  </p>
+
+  <div
+    id="booking-preview-box"
+    class="price-preview-box"
+    data-api-url="{% url 'booking:api_price_preview' slug=quest.slug %}"
+  >
+    <span id="preview-spinner" class="spinner">Расчёт стоимости...</span>
+    <div id="preview-result">Выберите дату, время и число игроков для расчёта.</div>
+  </div>
+
+  <form method="post" data-validate="true">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="field-errors">{{ form.non_field_errors }}</ul>
+    {% endif %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {% if field.name == 'extra_options' %}
+          <div class="checkbox-list">{{ field }}</div>
+        {% else %}
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Подтвердить бронирование</button>
+    <a class="btn btn-secondary" href="{% url 'booking:quest_detail' slug=quest.slug %}">Назад</a>
+  </form>
+</section>
+{% endblock %}

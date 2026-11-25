@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Изменение бронирования {{ booking.booking_code }} — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Изменение бронирования {{ booking.booking_code }}</h1>
+  <p>Квест: <strong>{{ quest.title }}</strong></p>
+
+  <div
+    id="booking-preview-box"
+    class="price-preview-box"
+    data-api-url="{% url 'booking:api_price_preview' slug=quest.slug %}"
+  >
+    <span id="preview-spinner" class="spinner">Пересчёт...</span>
+    <div id="preview-result">Текущая стоимость: {{ booking.total_price|floatformat:2 }} ₽</div>
+  </div>
+
+  <form method="post" data-validate="true">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="field-errors">{{ form.non_field_errors }}</ul>
+    {% endif %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {% if field.name == 'extra_options' %}
+          <div class="checkbox-list">{{ field }}</div>
+        {% else %}
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+    <a class="btn btn-secondary" href="{% url 'booking:booking_detail' pk=booking.pk %}">Отмена</a>
+  </form>
+</section>
+{% endblock %}

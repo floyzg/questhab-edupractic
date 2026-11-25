@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Таблица рекордов — QuestHub{% endblock %}
+{% block content %}
+<h1>Таблица рекордов команд</h1>
+
+<form class="filter-panel" method="get" action="{% url 'booking:leaderboard' %}">
+  <div class="filter-grid">
+    <div>
+      <label for="id_quest_filter">Фильтр по квесту</label>
+      <select id="id_quest_filter" name="quest">
+        <option value="">Все квесты</option>
+        {% for q in quests %}
+          <option value="{{ q.slug }}" {% if selected_quest == q.slug %}selected{% endif %}>{{ q.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+  <div class="hero-actions">
+    <button type="submit" class="btn btn-primary btn-sm">Показать</button>
+    <a class="btn btn-secondary btn-sm" href="{% url 'booking:leaderboard' %}">Сбросить</a>
+  </div>
+</form>
+
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th>Место</th>
+        <th>Команда</th>
+        <th>Квест</th>
+        <th>Время</th>
+        <th>Подсказки</th>
+        <th>Рейтинг</th>
+        <th>Дата</th>
+        <th>Фото</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for rec in page_obj %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td><strong>{{ rec.team.name }}</strong></td>
+          <td><a href="{% url 'booking:quest_detail' slug=rec.quest.slug %}">{{ rec.quest.title }}</a></td>
+          <td>{{ rec.completion_minutes }} мин</td>
+          <td>{{ rec.hints_used }}</td>
+          <td><strong>{{ rec.score }}</strong></td>
+          <td>{{ rec.played_at|date:"d.m.Y" }}</td>
+          <td>
+            {% if rec.team_photo %}
+              <img src="{{ rec.team_photo.url }}" alt="Фото команды {{ rec.team.name }}" width="80" height="50" loading="lazy">
+            {% else %}
+              —
+            {% endif %}
+          </td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="8">Рекорды пока не зафиксированы.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}Отмена бронирования — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>Отменить бронирование {{ booking.booking_code }}?</h1>
+  <p>Квест «{{ booking.quest.title }}» на {{ booking.booking_date|date:"d.m.Y" }} в {{ booking.start_time|time:"H:i" }}.</p>
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-danger">Да, отменить бронирование</button>
+    <a class="btn btn-secondary" href="{% url 'booking:booking_detail' pk=booking.pk %}">Назад</a>
+  </form>
+</section>
+{% endblock %}

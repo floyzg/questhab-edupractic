@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Ошибка сервера (500) — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>500 — Внутренняя ошибка сервера</h1>
+  <p>Произошёл сбой при обработке запроса. Информация уже записана в журнал, попробуйте позже.</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="{% url 'booking:home' %}">На главную</a>
+    <a class="btn btn-secondary" href="{% url 'booking:quest_list' %}">Открыть каталог</a>
+  </div>
+</section>
+{% endblock %}

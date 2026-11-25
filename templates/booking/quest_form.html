@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Редактирование квеста{% else %}Новый квест{% endif %} — QuestHub{% endblock %}
+{% block content %}
+<section class="form-card">
+  <h1>{% if is_edit %}Редактирование квеста «{{ quest.title }}»{% else %}Добавление квест-комнаты{% endif %}</h1>
+  <form method="post" enctype="multipart/form-data" data-validate="true">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+      <ul class="field-errors">{{ form.non_field_errors }}</ul>
+    {% endif %}
+    {% for field in form %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}<small class="help-text">{{ field.help_text }}</small>{% endif %}
+        {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+      </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-primary">Сохранить</button>
+    <a class="btn btn-secondary" href="{% url 'booking:quest_list' %}">Отмена</a>
+  </form>
+</section>
+{% endblock %}

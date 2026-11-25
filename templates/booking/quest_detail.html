@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ quest.title }} — QuestHub{% endblock %}
+{% block content %}
+<article class="card">
+  <div class="card-media">
+    {% if quest.image %}
+      <img src="{{ quest.image.url }}" alt="Обложка квеста {{ quest.title }}" width="640" height="360">
+    {% else %}
+      <img src="{% static 'img/quest-placeholder.svg' %}" alt="Иллюстрация квеста {{ quest.title }}" width="640" height="360">
+    {% endif %}
+  </div>
+  <div class="card-body">
+    <div class="badge-row">
+      <span class="badge">{{ quest.genre.name }}</span>
+      <span class="badge">{{ quest.age_rating.code }}</span>
+      <span class="badge">Страх {{ quest.fear_level }}/5</span>
+      <span class="badge">Сложность {{ quest.difficulty }}/5</span>
+      <span class="badge">{{ quest.duration_minutes }} мин</span>
+      {% if avg_rating %}<span class="badge">Оценка: {{ avg_rating|floatformat:1 }}/5</span>{% endif %}
+    </div>
+    <h1>{{ quest.title }}</h1>
+    <p>{{ quest.description }}</p>
+    <p>
+      <strong>Участники:</strong> от {{ quest.min_players }} до {{ quest.max_players }} чел. ·
+      <strong>Базовая цена (2–4 чел.):</strong> {{ quest.base_price|floatformat:0 }} ₽ ·
+      <strong>Доплата сверх 4 чел.:</strong> +{{ quest.extra_player_price|floatformat:0 }} ₽/чел.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="{% url 'booking:booking_create' slug=quest.slug %}?date={{ selected_date|date:'Y-m-d' }}">Забронировать сеанс</a>
+      {% if is_staff_or_operator %}
+        <a class="btn btn-secondary" href="{% url 'booking:quest_update' slug=quest.slug %}">Редактировать</a>
+        <a class="btn btn-danger" href="{% url 'booking:quest_delete' slug=quest.slug %}">Удалить</a>
+      {% endif %}
+    </div>
+  </div>
+</article>
+
+<section aria-labelledby="slots-heading">
+  <h2 id="slots-heading">Сетка сеансов (с учётом 30-мин перерыва)</h2>
+  <div class="form-group">
+    <label for="slots-date-picker">Выберите дату</label>
+    <input
+      id="slots-date-picker"
+      type="date"
+      value="{{ selected_date|date:'Y-m-d' }}"
+      data-api-url="{% url 'booking:api_quest_slots' slug=quest.slug %}"
+      data-book-url="{% url 'booking:booking_create' slug=quest.slug %}"
+    >
+    <span id="slots-spinner" class="spinner">Загрузка слотов...</span>
+  </div>
+
+  <div id="slots-grid-container" class="slots-grid">
+    {% for slot in slots %}
+      <div class="slot-item {% if not slot.available %}is-busy{% endif %}">
+        <strong>{{ slot.time }}</strong>
+        <span>{{ slot.tariff }} — {{ slot.price }} ₽</span>
+        {% if slot.available %}
+          <span class="badge badge-available">Свободно</span>
+          <a class="btn btn-primary btn-sm" href="{% url 'booking:booking_create' slug=quest.slug %}?date={{ selected_date|date:'Y-m-d' }}&time={{ slot.time }}">Выбрать</a>
+        {% else %}
+          <span class="badge badge-busy">{{ slot.reason }}</span>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</section>
+
+<section aria-labelledby="reviews-heading">
+  <h2 id="reviews-heading">Отзывы игроков</h2>
+  {% if user.is_authenticated %}
+    <form method="post" class="form-card" data-validate="true">
+      {% csrf_token %}
+      {% for field in review_form %}
+        <div class="form-group">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+          {% if field.errors %}<div class="field-errors">{{ field.errors }}</div>{% endif %}
+        </div>
+      {% endfor %}
+      <button type="submit" class="btn btn-primary btn-sm">Оставить отзыв</button>
+    </form>
+  {% else %}
+    <p><a href="{% url 'booking:login' %}">Войдите</a>, чтобы оставить отзыв.</p>
+  {% endif %}
+
+  <div class="grid-cards">
+    {% for rev in reviews %}
+      <article class="card">
+        <div class="card-body">
+          <strong>{{ rev.author.username }} — {{ rev.rating }}/5</strong>
+          <small class="help-text">{{ rev.created_at|date:"d.m.Y H:i" }}</small>
+          <p>{{ rev.comment }}</p>
+        </div>
+      </article>
+    {% empty %}
+      <p>Пока нет отзывов на этот квест.</p>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
