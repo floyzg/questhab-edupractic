@@ -17,6 +17,7 @@ from django.db.models import Avg, Count, Q, Sum
 from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
+from django.views.decorators.cache import cache_page
 from django.views.decorators.http import require_GET
 
 from .forms import (
@@ -130,6 +131,7 @@ def home_view(request: HttpRequest) -> HttpResponse:
     )
 
 
+@cache_page(60 * 5)
 def about_view(request: HttpRequest) -> HttpResponse:
     """Статическая страница правил клуба, тарифов и технических перерывов."""
     tariffs = TariffSlot.objects.all()

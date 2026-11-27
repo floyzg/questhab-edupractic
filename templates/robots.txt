@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Allow: /quests/
+Allow: /leaderboard/
+Disallow: /admin/
+Disallow: /accounts/
+Disallow: /profile/
+Disallow: /analytics/
+Disallow: /actor/
+Disallow: /bookings/

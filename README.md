@@ -1,6 +1,6 @@
 # QuestHub — Квест-комнаты и антикафе (Вариант 14)
 
-Веб-приложение на **Python 3.11+ / Django 4.2 LTS** для бронирования квест-комнат по расписанию с автоматическим расчётом стоимости, учётом доплаты за участников сверх 4 человек и контролем 30-минутного технического перерыва.
+Веб-приложение на **Python 3.11+ / Django >=4.2,<5.1 (см. requirements.txt)** для бронирования квест-комнат по расписанию с автоматическим расчётом стоимости, учётом доплаты за участников сверх 4 человек и контролем 30-минутного технического перерыва.
 
 ## Реализованная функциональность
 
@@ -22,15 +22,18 @@
 ## Быстрый запуск
 
 ```bash
-python -m venv venv
+python3 -m venv venv
 # Windows: venv\Scripts\activate
-# Linux/macOS: source venv/bin/activate
+source venv/bin/activate  # Linux/macOS
 
 pip install -r requirements.txt
 cp .env.example .env
+# Задайте собственный SECRET_KEY в .env.
+# Для обычного локального запуска установите в .env DEBUG=True.
 
 python manage.py migrate
 python manage.py seed_data
+python manage.py check
 python manage.py test
 
 # Для режима разработки с Django Debug Toolbar задайте DEBUG=True в .env:
