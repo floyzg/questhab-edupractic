@@ -5,7 +5,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block title %}QuestHub — Квест-комнаты и антикафе{% endblock %}</title>
-  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <meta name="description" content="{% block meta_description %}Выберите квест-комнату по жанру и возрасту, рассчитайте цену и забронируйте сеанс онлайн в QuestHub.{% endblock %}">
+  {% block meta_robots %}{% endblock %}
+  <meta property="og:title" content="{% block og_title %}QuestHub — Квест-комнаты и антикафе{% endblock %}">
+  <meta property="og:description" content="{% block og_description %}Онлайн-бронирование квест-комнат с расчётом стоимости и расписанием сеансов.{% endblock %}">
+  <meta property="og:type" content="website">
+  <link rel="stylesheet" href="{% static 'css/style.min.css' %}">
 </head>
 <body>
   <header class="site-header">
@@ -80,6 +85,6 @@
     </div>
   </footer>
 
-  <script src="{% static 'js/main.js' %}"></script>
+  <script src="{% static 'js/main.min.js' %}" defer></script>
 </body>
 </html>

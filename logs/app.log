@@ -1,0 +1,95 @@
+[2026-11-25 14:38:58,089] INFO booking (services:308): Создано бронирование QH-8A03AEE7 пользователем cap1 на квест "Тайна маяка" (2026-11-26 14:30:00).
+[2026-11-25 14:38:58,708] WARNING django.request (log:241): Forbidden (Permission denied): /actor/schedule/
+Traceback (most recent call last):
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 487, in actor_schedule_view
+    raise PermissionDenied('Раздел доступен только актёрам-аниматорам, операторам и администраторам.')
+django.core.exceptions.PermissionDenied: Раздел доступен только актёрам-аниматорам, операторам и администраторам.
+[2026-11-25 14:38:58,717] WARNING django.request (log:241): Forbidden (Permission denied): /reviews/1/edit/
+Traceback (most recent call last):
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 257, in review_update_view
+    _ensure_review_access(request.user, review)
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 97, in _ensure_review_access
+    raise PermissionDenied('У вас нет прав для изменения или удаления чужого отзыва.')
+django.core.exceptions.PermissionDenied: У вас нет прав для изменения или удаления чужого отзыва.
+[2026-11-25 14:38:59,288] WARNING django.request (log:241): Forbidden (Permission denied): /analytics/
+Traceback (most recent call last):
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 620, in analytics_view
+    raise PermissionDenied('Сводная финансовая аналитика доступна только оператору и администратору.')
+django.core.exceptions.PermissionDenied: Сводная финансовая аналитика доступна только оператору и администратору.
+[2026-11-25 14:39:01,573] INFO booking (services:308): Создано бронирование QH-0D28B7BA пользователем cap1 на квест "Тайна маяка" (2026-11-26 14:30:00).
+[2026-11-25 14:39:01,576] WARNING booking (views:80): Попытка несанкционированного доступа к брони QH-0D28B7BA пользователем cap2.
+[2026-11-25 14:39:01,577] WARNING django.request (log:241): Forbidden (Permission denied): /bookings/1/
+Traceback (most recent call last):
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 392, in booking_detail_view
+    _ensure_booking_access(request.user, booking)
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 85, in _ensure_booking_access
+    raise PermissionDenied('У вас нет прав для просмотра или изменения этого бронирования.')
+django.core.exceptions.PermissionDenied: У вас нет прав для просмотра или изменения этого бронирования.
+[2026-11-25 14:39:02,126] WARNING django.request (log:241): Not Found: /quests/no-such-quest/
+[2026-11-25 14:39:06,722] INFO booking (services:308): Создано бронирование QH-57485F0B пользователем cap1 на квест "Тайна маяка" (2026-11-26 13:00:00).
+[2026-11-25 14:39:06,725] INFO booking (services:386): Обновлено бронирование QH-57485F0B.
+[2026-11-25 21:49:04,908] WARNING django.request (log:241): Forbidden (Permission denied): /analytics/
+Traceback (most recent call last):
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/exception.py", line 55, in inner
+    response = get_response(request)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/core/handlers/base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/.venv/lib/python3.12/site-packages/django/contrib/auth/decorators.py", line 23, in _wrapper_view
+    return view_func(request, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/floyz/VSCode/questhub/booking/views.py", line 620, in analytics_view
+    raise PermissionDenied('Сводная финансовая аналитика доступна только оператору и администратору.')
+django.core.exceptions.PermissionDenied: Сводная финансовая аналитика доступна только оператору и администратору.
+[2026-11-25 21:49:04,918] WARNING django.server (basehttp:212): "GET /analytics/ HTTP/1.1" 403 2745
+[2026-11-25 21:49:08,727] WARNING django.request (log:241): Not Found: /quests/quest-nonexistent/
+[2026-11-25 21:49:08,728] WARNING django.server (basehttp:212): "GET /quests/quest-nonexistent/ HTTP/1.1" 404 2760
+[2026-11-25 22:57:51,721] WARNING django.request (log:241): Not Found: /favicon.ico
+[2026-11-25 22:57:51,722] WARNING django.server (basehttp:212): "GET /favicon.ico HTTP/1.1" 404 2445
+[2026-11-26 00:21:05,712] WARNING django.request (log:241): Not Found: /.well-known/appspecific/com.chrome.devtools.json
+[2026-11-26 00:21:05,718] WARNING django.server (basehttp:212): "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2445
+[2026-11-26 00:21:56,985] WARNING django.request (log:241): Not Found: /favicon.ico
+[2026-11-26 00:21:56,986] WARNING django.server (basehttp:212): "GET /favicon.ico HTTP/1.1" 404 2445
+[2026-11-26 00:22:01,249] WARNING django.request (log:241): Not Found: /.well-known/appspecific/com.chrome.devtools.json
+[2026-11-26 00:22:01,250] WARNING django.server (basehttp:212): "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2445
+[2026-11-26 00:22:01,254] WARNING django.request (log:241): Not Found: /.well-known/appspecific/com.chrome.devtools.json
+[2026-11-26 00:22:01,255] WARNING django.server (basehttp:212): "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2445
+[2026-11-26 00:22:01,733] WARNING django.request (log:241): Not Found: /.well-known/appspecific/com.chrome.devtools.json
+[2026-11-26 00:22:01,734] WARNING django.server (basehttp:212): "GET /.well-known/appspecific/com.chrome.devtools.json HTTP/1.1" 404 2445
